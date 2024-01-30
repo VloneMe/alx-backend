@@ -9,6 +9,7 @@ It is a caching system without a limit.
 
 from base_caching import BaseCaching
 
+
 class BasicCache(BaseCaching):
     """
     BasicCache Class
