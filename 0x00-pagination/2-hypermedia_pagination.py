@@ -18,13 +18,15 @@ def index_range(page: int, page_size: int) -> Tuple[int, int]:
         page_size (int): The number of items per page.
 
     Returns:
-        Tuple[int, int]: A tuple representing the start and end indices of the requested page.
+        Tuple[int, int]: A tuple representing the start and
+        end indices of the requested page.
     """
     return ((page - 1) * page_size, ((page - 1) * page_size) + page_size)
 
 
 class Server:
-    """Server class for paginating a database of popular baby names with hypermedia support.
+    """Server class for paginating a database of
+    popular baby names with hypermedia support.
     """
     DATA_FILE = "Popular_Baby_Names.csv"
 
@@ -52,7 +54,8 @@ class Server:
 
         Args:
             page (int, optional): The page number to retrieve (default is 1).
-            page_size (int, optional): The number of items per page (default is 10).
+            page_size (int, optional): The number of
+            items per page (default is 10).
 
         Returns:
             List[List[str]]: The data for the requested page.
@@ -70,10 +73,12 @@ class Server:
 
         Args:
             page (int, optional): The page number to retrieve (default is 1).
-            page_size (int, optional): The number of items per page (default is 10).
+            page_size (int, optional): The number of
+            items per page (default is 10).
 
         Returns:
-            Dict: A dictionary containing hypermedia-style pagination information.
+            Dict: A dictionary containing hypermedia-style
+            pagination information.
         """
         data = self.get_page(page, page_size)
         start, end = index_range(page, page_size)
