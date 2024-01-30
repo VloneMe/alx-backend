@@ -1,29 +1,14 @@
 #!/usr/bin/env python3
-"""Task 3: Deletion-Resilient Hypermedia Pagination
-
-This module extends the hypermedia pagination mechanism to support retrieval of
-information from a specific index in a dataset of popular baby names.
+"""
+Deletion-Resilient Hypermedia Pagination
 """
 
 import csv
-from typing import Dict, List, Tuple
-
-
-def index_range(page: int, page_size: int) -> Tuple[int, int]:
-    """Calculate the index range for a given page and page size.
-
-    Args:
-        page (int): The current page number.
-        page_size (int): The number of items per page.
-
-    Returns:
-        Tuple[int, int]: A tuple representing the start and end indices of the requested page.
-    """
-    return ((page - 1) * page_size, ((page - 1) * page_size) + page_size)
+from typing import Dict, List
 
 
 class Server:
-    """Server class for paginating a database of popular baby names with deletion resilience.
+    """Server class to paginate a database of popular baby names with deletion resilience.
     """
     DATA_FILE = "Popular_Baby_Names.csv"
 
@@ -31,6 +16,7 @@ class Server:
         """Initialize the Server instance.
         """
         self.__dataset = None
+        self.__indexed_dataset = None
 
     def dataset(self) -> List[List[str]]:
         """Retrieve the cached dataset.
@@ -46,52 +32,39 @@ class Server:
 
         return self.__dataset
 
-    def get_page(self, page: int = 1, page_size: int = 10) -> List[List[str]]:
-        """Retrieve a page of data from the dataset.
-
-        Args:
-            page (int, optional): The page number to retrieve (default is 1).
-            page_size (int, optional): The number of items per page (default is 10).
+    def indexed_dataset(self) -> Dict[int, List[str]]:
+        """Create a dataset indexed by sorting position, starting at 0.
 
         Returns:
-            List[List[str]]: The data for the requested page.
+            Dict[int, List[str]]: The indexed dataset.
         """
-        assert isinstance(page, int) and isinstance(page_size, int)
-        assert page > 0 and page_size > 0
-        start, end = index_range(page, page_size)
-        data = self.dataset()
-        if start > len(data):
-            return []
-        return data[start:end]
+        if self.__indexed_dataset is None:
+            dataset = self.dataset()
+            truncated_dataset = dataset[:1000]  # Limit to the first 1000 rows for efficiency
+            self.__indexed_dataset = {i: row for i, row in enumerate(truncated_dataset)}
+        return self.__indexed_dataset
 
     def get_hyper_index(self, index: int = None, page_size: int = 10) -> Dict:
-        """Retrieve information about a page from a given index with a specified size.
+        """Retrieve hypermedia-style pagination information from a given index.
+
+        The goal is to ensure that if certain rows are removed from the dataset
+        between two queries, the user does not miss items when changing pages.
 
         Args:
-            index (int, optional): The starting index (default is None).
-            page_size (int, optional): The number of items per page (default is 10).
+            index (int, optional): The start index of the current page (default is None).
+            page_size (int, optional): The size of items required in the current page (default is 10).
 
         Returns:
-            Dict: A dictionary containing hypermedia-style pagination information.
+            Dict[int, List[str], int, int]: A dictionary containing hypermedia-style pagination information.
         """
-        data = self.indexed_dataset()
-        assert index is not None and 0 <= index <= max(data.keys())
-        page_data = []
-        data_count = 0
-        next_index = None
-        start = index if index else 0
-        for i, item in data.items():
-            if i >= start and data_count < page_size:
-                page_data.append(item)
-                data_count += 1
-                continue
-            if data_count == page_size:
-                next_index = i
-                break
-        page_info = {
-            'index': index,
-            'next_index': next_index,
-            'page_size': len(page_data),
-            'data': page_data,
-        }
-        return page_info
+        focus = []
+        dataset = self.indexed_dataset()
+        index = 0 if index is None else index
+        keys = sorted(dataset.keys())
+        assert 0 <= index <= keys[-1]
+
+        [focus.append(i) for i in keys if i >= index and len(focus) <= page_size]
+        data = [dataset[v] for v in focus[:-1]]
+        next_index = focus[-1] if len(focus) - page_size == 1 else None
+
+        return {'index': index, 'data': data, 'page_size': len(data), 'next_index': next_index}
