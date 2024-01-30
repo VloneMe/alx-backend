@@ -8,7 +8,8 @@ from typing import Dict, List
 
 
 class Server:
-    """Server class to paginate a database of popular baby names with deletion resilience.
+    """Server class to paginate a database of
+    popular baby names with deletion resilience.
     """
     DATA_FILE = "Popular_Baby_Names.csv"
 
@@ -40,8 +41,10 @@ class Server:
         """
         if self.__indexed_dataset is None:
             dataset = self.dataset()
-            truncated_dataset = dataset[:1000]  # Limit to the first 1000 rows for efficiency
-            self.__indexed_dataset = {i: row for i, row in enumerate(truncated_dataset)}
+            truncated_dataset = dataset[:1000]
+            self.__indexed_dataset = {
+                    i: row for i, row in enumerate(truncated_dataset)
+                    }
         return self.__indexed_dataset
 
     def get_hyper_index(self, index: int = None, page_size: int = 10) -> Dict:
@@ -51,11 +54,14 @@ class Server:
         between two queries, the user does not miss items when changing pages.
 
         Args:
-            index (int, optional): The start index of the current page (default is None).
-            page_size (int, optional): The size of items required in the current page (default is 10).
+            index (int, optional): The start
+            index of the current page (default is None).
+            page_size (int, optional): The size of items required
+            in the current page (default is 10).
 
         Returns:
-            Dict[int, List[str], int, int]: A dictionary containing hypermedia-style pagination information.
+            Dict[int, List[str], int, int]: A dictionary containing
+            hypermedia-style pagination information.
         """
         focus = []
         dataset = self.indexed_dataset()
@@ -63,8 +69,10 @@ class Server:
         keys = sorted(dataset.keys())
         assert 0 <= index <= keys[-1]
 
-        [focus.append(i) for i in keys if i >= index and len(focus) <= page_size]
+        [focus.append(i) for i in keys if i >= index and
+         len(focus) <= page_size]
         data = [dataset[v] for v in focus[:-1]]
         next_index = focus[-1] if len(focus) - page_size == 1 else None
 
-        return {'index': index, 'data': data, 'page_size': len(data), 'next_index': next_index}
+        return {'index': index, 'data': data, 'page_size': len(data),
+                'next_index': next_index}
