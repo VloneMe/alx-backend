@@ -1,100 +1,71 @@
 #!/usr/bin/env python3
-"""
-LFUCache Module
 
-This module defines the LFUCache class, which inherits from BaseCaching.
-It implements a Least Frequently Used (LFU) caching algorithm.
-
-"""
-
+'''
+LFU Caching
+'''
+from collections import deque
 from base_caching import BaseCaching
-from collections import OrderedDict
 
 
 class LFUCache(BaseCaching):
     """
-    LFUCache Class
+    LFUCache: Implements a Least Frequently Used (LFU) caching algorithm.
 
-    This caching system inherits from BaseCaching and
-    implements an LFU algorithm.
-
-    Methods:
-    - __init__(): Initializes the LFUCache object.
-    - put(key, item): Assigns the item to the cache using the LFU algorithm.
-    - get(key): Returns the value linked to the given key.
-
+    Inherits from BaseCaching and serves as
+    a caching system with LFU eviction policy.
     """
 
     def __init__(self):
         """
-        __init__()
-
-        Initializes the LFUCache object.
-
-        Attributes:
-        - lru_cache: Ordered dictionary to store
-          the items in the cache with LRU order.
-        - lfu_cache: Dictionary to store
-          the frequency of each key in the cache.
-
+        Initialize the LFUCache.
         """
+        self.frequency_of_item = {}
+        self.lfu_order = []
         super().__init__()
-        self.lru_cache = OrderedDict()
-        self.lfu_cache = {}
 
     def put(self, key, item):
         """
-        put(key, item)
+        Put a key/item pair into the cache, implementing LFU eviction policy.
 
-        Assigns the item to the cache using the LFU algorithm.
-
-        Parameters:
-        - key: The key for the caching.
-        - item: The item to be cached.
-
+        Args:
+            key: The key for caching.
+            item: The item to be cached.
         """
-        if key in self.lru_cache:
-            del self.lru_cache[key]
-        if len(self.lru_cache) > BaseCaching.MAX_ITEMS - 1:
-            min_value = min(self.lfu_cache.values())
-            lfu_keys = [k for k, v in self.lfu_cache.items() if v == min_value]
-            if len(lfu_keys) == 1:
-                print("DISCARD:", lfu_keys[0])
-                self.lru_cache.pop(lfu_keys[0])
-                del self.lfu_cache[lfu_keys[0]]
+        if key is not None and item is not None:
+            if key in self.cache_data:
+                self.cache_data[key] = item
+                self.frequency_of_item[key] += 1
+                self.lfu_order.remove(key)
             else:
-                for k, _ in list(self.lru_cache.items()):
-                    if k in lfu_keys:
-                        print("DISCARD:", k)
-                        self.lru_cache.pop(k)
-                        del self.lfu_cache[k]
-                        break
-        self.lru_cache[key] = item
-        self.lru_cache.move_to_end(key)
-        if key in self.lfu_cache:
-            self.lfu_cache[key] += 1
-        else:
-            self.lfu_cache[key] = 1
-        self.cache_data = dict(self.lru_cache)
+                if len(self.cache_data) >= self.MAX_ITEMS:
+                    min_value = min(self.frequency_of_item.values())
+                    min_keys = [keys for keys in self.frequency_of_item
+                                if self.frequency_of_item[keys] == min_value]
+                    for index in range(len(self.lfu_order)):
+                        if self.lfu_order[index] in min_keys:
+                            break
+                    discarded_key = self.lfu_order.pop(index)
+                    del self.cache_data[discarded_key]
+                    del self.frequency_of_item[discarded_key]
+                    print("DISCARD:", discarded_key)
+                self.cache_data[key] = item
+                self.frequency_of_item[key] = 1
+            self.lfu_order.append(key)
 
     def get(self, key):
         """
-        get(key)
+        Get the value associated with the key from the cache.
 
-        Returns the value linked to the given key.
-
-        Parameters:
-        - key: The key for retrieving the cached item.
+        Args:
+            key: The key for retrieving the cached item.
 
         Returns:
-        The cached item linked to the key, or None if not found.
-
+            The cached item linked to the key, or None if not found.
         """
-        if key in self.lru_cache:
-            value = self.lru_cache[key]
-            self.lru_cache.move_to_end(key)
-            if key in self.lfu_cache:
-                self.lfu_cache[key] += 1
-            else:
-                self.lfu_cache[key] = 1
-            return value
+        if key in self.cache_data:
+            self.lfu_order.remove(key)
+            self.lfu_order.append(key)
+            self.frequency_of_item[key] += 1
+            return self.cache_data[key]
+        else:
+            return None
